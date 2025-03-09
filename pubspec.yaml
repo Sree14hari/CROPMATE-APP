@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   # Add this line
-  app_settings: ^4.2.0
+  # app_settings: ^4.2.0
   http: ^1.1.0
   geolocator: ^10.0.0
   intl: ^0.18.1
