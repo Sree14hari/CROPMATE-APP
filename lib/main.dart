@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:plantricz/screens/splash_screen.dart';
 import 'package:plantricz/screens/home.dart';
 import 'package:plantricz/screens/plant_identification_page.dart';
 import 'package:plantricz/screens/disease_detection_page.dart';
