@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:plantricz/models/crop_watering_plan.dart';
+import 'package:plantricz/models/watering_schedule.dart';
+import 'package:plantricz/widgets/growth_stage_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_init;
 import 'package:path_provider/path_provider.dart';
+// import 'package:app_settings/app_settings.dart';
+// import 'package:plantriczz/models/crop_watering_plan.dart';
+// import 'package:plantriczz/widgets/growth_stage_widget.dart';
 
 class WateringPage extends StatefulWidget {
   const WateringPage({Key? key}) : super(key: key);
@@ -30,19 +36,15 @@ class _WateringPageState extends State<WateringPage> {
   }
 
   Future<void> _checkNotificationPermissions() async {
-    // Check if we have permission to schedule exact alarms
     if (Platform.isAndroid) {
-      // For Android 12+, we need to check and request permission
       final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
           flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
 
-      // Remove the extra parentheses and use the correct method
       final bool? hasPermission =
           await androidPlugin?.areNotificationsEnabled();
 
       if (hasPermission == false) {
-        // Show a dialog explaining why we need this permission
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -59,7 +61,6 @@ class _WateringPageState extends State<WateringPage> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  // Use the correct method to request permissions
                   await androidPlugin?.requestNotificationsPermission();
                 },
                 child: const Text('Grant Permission'),
@@ -74,8 +75,6 @@ class _WateringPageState extends State<WateringPage> {
   Future<void> _initializeNotifications() async {
     try {
       tz_init.initializeTimeZones();
-      final String timeZoneName = tz.local.name;
-
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -111,7 +110,6 @@ class _WateringPageState extends State<WateringPage> {
       final NotificationDetails platformChannelSpecifics =
           NotificationDetails(android: androidPlatformChannelSpecifics);
 
-      // Make sure we're scheduling for a future time
       final scheduledDate = tz.TZDateTime.from(
         schedule.nextWatering.isAfter(DateTime.now())
             ? schedule.nextWatering
@@ -119,7 +117,6 @@ class _WateringPageState extends State<WateringPage> {
         tz.local,
       );
 
-      // Use inexact scheduling as a fallback if exact scheduling fails
       try {
         await flutterLocalNotificationsPlugin.zonedSchedule(
           id,
@@ -133,7 +130,6 @@ class _WateringPageState extends State<WateringPage> {
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
       } catch (exactAlarmError) {
-        // If exact alarm fails, try with inexact timing
         print('Falling back to inexact alarm: $exactAlarmError');
         await flutterLocalNotificationsPlugin.zonedSchedule(
           id,
@@ -196,7 +192,6 @@ class _WateringPageState extends State<WateringPage> {
       ),
       body: Column(
         children: [
-          // Enhanced header section
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
@@ -243,15 +238,13 @@ class _WateringPageState extends State<WateringPage> {
               ],
             ),
           ),
-
-          // Schedule list or empty state
           Expanded(
             child:
                 _schedules.isEmpty ? _buildEmptyState() : _buildScheduleList(),
           ),
         ],
       ),
-      // Only show the floating action button when there are schedules
+      // Only show the floating action button when there's at least one plant
       floatingActionButton: _schedules.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
@@ -266,7 +259,6 @@ class _WateringPageState extends State<WateringPage> {
     );
   }
 
-  // Enhanced empty state
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -328,7 +320,6 @@ class _WateringPageState extends State<WateringPage> {
     );
   }
 
-  // Enhanced schedule list
   Widget _buildScheduleList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -338,7 +329,6 @@ class _WateringPageState extends State<WateringPage> {
         final daysUntilWatering =
             schedule.nextWatering.difference(DateTime.now()).inDays;
 
-        // Determine status color based on days until watering
         Color statusColor = Colors.blue;
         String statusText = 'Water in $daysUntilWatering days';
 
@@ -358,7 +348,6 @@ class _WateringPageState extends State<WateringPage> {
           ),
           child: Column(
             children: [
-              // Status indicator
               Container(
                 width: double.infinity,
                 padding:
@@ -389,13 +378,10 @@ class _WateringPageState extends State<WateringPage> {
                   ],
                 ),
               ),
-
-              // Main content
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    // Plant image or icon
                     Container(
                       width: 80,
                       height: 80,
@@ -425,8 +411,6 @@ class _WateringPageState extends State<WateringPage> {
                             ),
                     ),
                     const SizedBox(width: 16),
-
-                    // Plant details
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,31 +422,58 @@ class _WateringPageState extends State<WateringPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 14,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Frequency: ${schedule.frequency}',
-                                style: TextStyle(
-                                  fontSize: 14,
+                          const SizedBox(height: 4),
+                          if (schedule.cropType != null)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.grass,
+                                  size: 16,
+                                  color: Colors.green[700],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Crop: ${schedule.cropType}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (schedule.cropType != null &&
+                              schedule.plantingDate != null &&
+                              schedule.currentStageIndex != null)
+                            GrowthStageWidget(
+                              cropType: schedule.cropType!,
+                              plantingDate: schedule.plantingDate!,
+                              currentStageIndex: schedule.currentStageIndex!,
+                            ),
+                          if (schedule.cropType == null)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
                                   color: Colors.grey[700],
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Frequency: ${schedule.frequency}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(
                                 Icons.history,
-                                size: 14,
-                                color: Colors.grey[600],
+                                size: 16,
+                                color: Colors.grey[700],
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -480,48 +491,41 @@ class _WateringPageState extends State<WateringPage> {
                   ],
                 ),
               ),
-
-              // Action buttons
               Padding(
-                padding: const EdgeInsets.only(right: 8, bottom: 8),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton.icon(
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _waterPlant(index);
+                      },
+                      icon: const Icon(Icons.water_drop),
+                      label: const Text('Water Now'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                        side: BorderSide(color: Colors.blue[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _showEditScheduleDialog(index);
+                      },
+                      icon: const Icon(Icons.edit),
+                      color: Colors.grey[600],
+                    ),
+                    IconButton(
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         _deleteSchedule(index);
                       },
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: Colors.red[400],
-                        size: 18,
-                      ),
-                      label: Text(
-                        'Remove',
-                        style: TextStyle(
-                          color: Colors.red[400],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        _markAsWatered(index);
-                      },
-                      icon: const Icon(
-                        Icons.check,
-                        size: 18,
-                      ),
-                      label: const Text('Watered'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                      icon: const Icon(Icons.delete),
+                      color: Colors.red[400],
                     ),
                   ],
                 ),
@@ -533,361 +537,338 @@ class _WateringPageState extends State<WateringPage> {
     );
   }
 
-  Future<void> _markAsWatered(int index) async {
-    final schedule = _schedules[index];
-    final wateringInterval = schedule.frequency.contains('7')
-        ? 7
-        : schedule.frequency.contains('14')
-            ? 14
-            : schedule.frequency.contains('30')
-                ? 30
-                : 3;
-
-    final nextWatering = DateTime.now().add(Duration(days: wateringInterval));
-
-    setState(() {
-      _schedules[index] = WateringSchedule(
-        plant: schedule.plant,
-        frequency: schedule.frequency,
-        lastWatered: DateTime.now(),
-        nextWatering: nextWatering,
-        imagePath: schedule.imagePath,
-      );
-    });
-
-    // Cancel existing notification and schedule a new one
-    await flutterLocalNotificationsPlugin.cancel(schedule.plant.hashCode);
-    await _scheduleNotification(_schedules[index]);
-
-    await _saveSchedules();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Plant marked as watered'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Future<void> _deleteSchedule(int index) async {
-    final schedule = _schedules[index];
-
-    // Cancel notification for this plant
-    await flutterLocalNotificationsPlugin.cancel(schedule.plant.hashCode);
-
-    setState(() {
-      _schedules.removeAt(index);
-    });
-
-    await _saveSchedules();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Schedule removed'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  Future<void> _showAddScheduleDialog() async {
-    String plantName = '';
+  void _showAddScheduleDialog() {
+    final TextEditingController plantName = TextEditingController();
     String frequency = 'Every 7 days';
     File? selectedImage;
-
-    final picker = ImagePicker();
-
-    Future<void> pickImage() async {
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        selectedImage = File(pickedFile.path);
-      }
-    }
+    String? selectedCropType;
+    DateTime? plantingDate = DateTime.now();
+    bool isCustomFrequency = true;
 
     showDialog(
-        context: context,
-        builder: (context) => StatefulBuilder(
-              builder: (context, setDialogState) => Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                // Wrap the container in a SingleChildScrollView to handle keyboard overflow
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Dialog header
-                        const Text(
-                          'Add New Plant',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Add New Plant',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: plantName,
+                      decoration: InputDecoration(
+                        labelText: 'Plant Name',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Create a watering schedule for your plant',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Image picker
-                        Center(
-                          child: GestureDetector(
-                            onTap: () async {
-                              await pickImage();
-                              setDialogState(() {});
-                            },
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                                image: selectedImage != null
-                                    ? DecorationImage(
-                                        image: FileImage(selectedImage!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: selectedImage == null
-                                  ? Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.add_photo_alternate,
-                                          size: 40,
-                                          color: Colors.grey[500],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Add Photo',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Plant name field
-                        TextField(
+                        prefixIcon: const Icon(Icons.eco),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Replace Flexible with a more appropriate solution
+                    // DropdownButtonFormField<String>(
+                    //   isExpanded:
+                    //       true, // This ensures the dropdown fits within its container
+                    //   decoration: InputDecoration(
+                    //     labelText: 'Crop Type (Optional)',
+                    //     border: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(12),
+                    //     ),
+                    //     prefixIcon: const Icon(Icons.grass),
+                    //   ),
+                    //   value: selectedCropType,
+                    //   hint: const Text('Select crop type for specific care'),
+                    //   items: [
+                    //     const DropdownMenuItem<String>(
+                    //       value: null,
+                    //       child: Text('Custom Schedule'),
+                    //     ),
+                    //     ...CropWateringPlan.getDefaultPlans().map((plan) {
+                    //       return DropdownMenuItem<String>(
+                    //         value: plan.cropName,
+                    //         child: Text(plan.cropName),
+                    //       );
+                    //     }).toList(),
+                    //   ],
+                    //   onChanged: (value) {
+                    //     setState(() {
+                    //       selectedCropType = value;
+                    //       isCustomFrequency = value == null;
+                    //     });
+                    //   },
+                    // ),
+                    const SizedBox(height: 16),
+                    if (selectedCropType != null)
+                      InkWell(
+                        onTap: () async {
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: plantingDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              plantingDate = picked;
+                            });
+                          }
+                        },
+                        child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: 'Plant Name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.eco),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                          ),
-                          onChanged: (value) {
-                            plantName = value;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Watering frequency dropdown
-                        DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            labelText: 'Watering Frequency',
+                            labelText: 'Planting Date',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             prefixIcon: const Icon(Icons.calendar_today),
-                            filled: true,
-                            fillColor: Colors.grey[50],
                           ),
-                          value: frequency,
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'Every 3 days',
-                              child: Text('Every 3 days'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Every 7 days',
-                              child: Text('Every 7 days'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Every 14 days',
-                              child: Text('Every 14 days'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Every 30 days',
-                              child: Text('Every 30 days'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            frequency = value!;
-                          },
+                          child: Text(
+                            plantingDate != null
+                                ? '${plantingDate!.day}/${plantingDate!.month}/${plantingDate!.year}'
+                                : 'Select planting date',
+                          ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Action buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                ),
-                              ),
+                      ),
+                    const SizedBox(height: 16),
+                    if (isCustomFrequency)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Watering Frequency',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () async {
-                                if (plantName.isNotEmpty) {
-                                  final days = frequency.contains('3')
-                                      ? 3
-                                      : frequency.contains('7')
-                                          ? 7
-                                          : frequency.contains('14')
-                                              ? 14
-                                              : 30;
-
-                                  final nextWatering =
-                                      DateTime.now().add(Duration(days: days));
-
-                                  // Save image if selected
-                                  String? imagePath;
-                                  if (selectedImage != null) {
-                                    final appDir =
-                                        await getApplicationDocumentsDirectory();
-                                    final fileName =
-                                        '${DateTime.now().millisecondsSinceEpoch}.jpg';
-                                    final savedImage = await selectedImage!
-                                        .copy('${appDir.path}/$fileName');
-                                    imagePath = savedImage.path;
-                                  }
-
-                                  final newSchedule = WateringSchedule(
-                                    plant: plantName,
-                                    frequency: frequency,
-                                    lastWatered: DateTime.now(),
-                                    nextWatering: nextWatering,
-                                    imagePath: imagePath,
-                                  );
-
-                                  setState(() {
-                                    _schedules.add(newSchedule);
-                                  });
-
-                                  // Schedule notification
-                                  await _scheduleNotification(newSchedule);
-
-                                  await _saveSchedules();
-
-                                  Navigator.pop(context);
-
-                                  // Show success message
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          '${plantName} added to your watering schedule'),
-                                      backgroundColor: Colors.green[600],
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  // Show error for empty plant name
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Please enter a plant name'),
-                                      backgroundColor: Colors.red,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue[600],
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('Add Plant'),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              _buildFrequencyChip('Every 3 days', frequency,
+                                  (val) {
+                                setState(() => frequency = val);
+                              }),
+                              _buildFrequencyChip('Every 7 days', frequency,
+                                  (val) {
+                                setState(() => frequency = val);
+                              }),
+                              _buildFrequencyChip('Every 14 days', frequency,
+                                  (val) {
+                                setState(() => frequency = val);
+                              }),
+                              _buildFrequencyChip('Every 30 days', frequency,
+                                  (val) {
+                                setState(() => frequency = val);
+                              }),
+                            ],
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    // Image selection
+                    const Text(
+                      'Plant Image (Optional)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () async {
+                        final ImagePicker picker = ImagePicker();
+                        final XFile? image =
+                            await picker.pickImage(source: ImageSource.gallery);
+
+                        if (image != null) {
+                          setState(() {
+                            selectedImage = File(image.path);
+                          });
+                        }
+                      },
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: selectedImage != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  selectedImage!,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(
+                                    Icons.add_a_photo,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Tap to select an image',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (plantName.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a plant name'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        final newSchedule = WateringSchedule(
+                          plant: plantName.text,
+                          frequency: frequency,
+                          lastWatered: DateTime.now(),
+                          nextWatering: DateTime.now().add(
+                            Duration(
+                              days: int.parse(frequency.split(' ')[1]),
+                            ),
+                          ),
+                          imagePath: selectedImage?.path,
+                          cropType: selectedCropType,
+                          plantingDate: plantingDate,
+                          currentStageIndex: 0,
+                        );
+
+                        // Add the schedule to the list
+                        setState(() {
+                          _schedules.add(newSchedule);
+                        });
+
+                        _saveSchedules();
+                        _scheduleNotification(newSchedule);
+
+                        // Close the dialog
+                        Navigator.pop(dialogContext);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Add Schedule'),
+                    ),
+                  ],
                 ),
               ),
-            ));
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrequencyChip(
+      String label, String selected, ValueChanged<String> onSelected) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected == label,
+      onSelected: (bool selected) {
+        if (selected) {
+          onSelected(label);
+        }
+      },
+      selectedColor: Colors.blue[600],
+      backgroundColor: Colors.grey[200],
+      labelStyle: TextStyle(
+        color: selected == label ? Colors.white : Colors.black,
+      ),
+    );
+  }
+
+  void _waterPlant(int index) {
+    final schedule = _schedules[index];
+    final updatedSchedule = schedule.copyWith(
+      lastWatered: DateTime.now(),
+      nextWatering: DateTime.now().add(
+        Duration(days: int.parse(schedule.frequency.split(' ')[1])),
+      ),
+    );
+
+    setState(() {
+      _schedules[index] = updatedSchedule;
+    });
+
+    _saveSchedules();
+    _scheduleNotification(updatedSchedule);
+
+    // Show confirmation to the user
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${schedule.plant} has been watered!'),
+        backgroundColor: Colors.green[600],
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+
+    // Add haptic feedback for confirmation
+    HapticFeedback.mediumImpact();
+  }
+
+  void _showEditScheduleDialog(int index) {
+    // Implement edit schedule functionality
+  }
+
+  void _deleteSchedule(int index) {
+    setState(() {
+      _schedules.removeAt(index);
+    });
+
+    _saveSchedules();
   }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-class WateringSchedule {
-  final String plant;
-  final String frequency;
-  final DateTime lastWatered;
-  final DateTime nextWatering;
-  final String? imagePath; // Changed from image to imagePath
-
-  WateringSchedule({
-    required this.plant,
-    required this.frequency,
-    required this.lastWatered,
-    required this.nextWatering,
-    this.imagePath,
-  });
-
-  // Convert to JSON for storage
-  Map<String, dynamic> toJson() {
-    return {
-      'plant': plant,
-      'frequency': frequency,
-      'lastWatered': lastWatered.toIso8601String(),
-      'nextWatering': nextWatering.toIso8601String(),
-      'imagePath': imagePath,
-    };
-  }
-
-  // Create from JSON
-  factory WateringSchedule.fromJson(Map<String, dynamic> json) {
-    return WateringSchedule(
-      plant: json['plant'],
-      frequency: json['frequency'],
-      lastWatered: DateTime.parse(json['lastWatered']),
-      nextWatering: DateTime.parse(json['nextWatering']),
-      imagePath: json['imagePath'],
-    );
   }
 }

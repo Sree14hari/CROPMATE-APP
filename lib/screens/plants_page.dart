@@ -111,7 +111,10 @@ class _PlantsPageState extends State<PlantsPage> {
                           },
                           transitionDuration: const Duration(milliseconds: 500),
                         ),
-                      );
+                      ).then((_) {
+                        // Reload plants when returning from identification page
+                        _loadSavedPlants();
+                      });
                     },
                     icon: const Icon(Icons.search),
                     label: const Text('Identify Plants'),
