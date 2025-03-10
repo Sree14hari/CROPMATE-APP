@@ -4,7 +4,7 @@ import 'package:plantricz/screens/splash_screen.dart';
 import 'package:plantricz/screens/home.dart';
 import 'package:plantricz/screens/plant_identification_page.dart';
 import 'package:plantricz/screens/disease_detection_page.dart';
-import 'package:plantricz/screens/plants_page.dart'; // Add this import
+import 'package:plantricz/screens/plants_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,11 +54,12 @@ class PlantricApp extends StatelessWidget {
               color: Colors.black, fontSize: 20, fontWeight: FontWeight.w500),
         ),
       ),
-      home: const HomePage(),
+      home: const SplashScreen(), // Changed from HomePage to SplashScreen
       routes: {
+        '/home': (context) => const HomePage(),
         '/disease-detection': (context) => const DiseaseDetectionPage(),
         '/plant-identification': (context) => const PlantIdentificationPage(),
-        '/plants': (context) => const PlantsPage(), // Add this route
+        '/plants': (context) => const PlantsPage(),
       },
     );
   }
