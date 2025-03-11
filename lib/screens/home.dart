@@ -6,7 +6,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:plantricz/screens/disease_detection_page.dart';
 import 'package:plantricz/screens/plant_identification_page.dart';
 import 'package:plantricz/screens/plants_page.dart';
-import 'package:plantricz/screens/watering_page.dart'; // Add this import
+import 'package:plantricz/screens/seasonal_care_page.dart'; // Add this import
+import 'package:plantricz/screens/watering_page.dart';
 import 'package:plantricz/services/weather_service.dart';
 import 'package:flutter/services.dart';
 
@@ -137,9 +138,51 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 8),
                       ],
                     ),
+                    Spacer(),
                     Row(
-                      children: const [
-                        // Icons can be added here later
+                      children: [
+                        // Add seasonal care calendar button
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month,
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const SeasonalCarePage(),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  var curve = Curves.easeOutBack;
+                                  var curveTween = CurveTween(curve: curve);
+
+                                  var fadeAnimation = Tween<double>(
+                                    begin: 0.0,
+                                    end: 1.0,
+                                  ).animate(animation.drive(curveTween));
+
+                                  var scaleAnimation = Tween<double>(
+                                    begin: 0.5,
+                                    end: 1.0,
+                                  ).animate(animation.drive(curveTween));
+
+                                  return FadeTransition(
+                                    opacity: fadeAnimation,
+                                    child: ScaleTransition(
+                                      scale: scaleAnimation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                transitionDuration:
+                                    const Duration(milliseconds: 500),
+                              ),
+                            );
+                          },
+                          tooltip: 'Seasonal Care Calendar',
+                        ),
                       ],
                     ),
                     Row(
