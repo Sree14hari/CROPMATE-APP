@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:plantricz/screens/splash_screen.dart';
-import 'package:plantricz/screens/home.dart';
-import 'package:plantricz/screens/plant_identification_page.dart';
-import 'package:plantricz/screens/disease_detection_page.dart';
-import 'package:plantricz/screens/plants_page.dart';
+import 'package:cropmate/screens/splash_screen.dart';
+import 'package:cropmate/screens/home.dart';
+import 'package:cropmate/screens/plant_identification_page.dart';
+import 'package:cropmate/screens/disease_detection_page.dart';
+import 'package:cropmate/screens/plants_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +16,12 @@ void main() async {
       DeviceOrientation.portraitDown,
     ]);
 
+    // Enable high refresh rate (120Hz) support
+    await SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
+
+    // Set system UI overlay style
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -39,7 +45,7 @@ class PlantricApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Plantricz',
+      title: 'cropmate',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),

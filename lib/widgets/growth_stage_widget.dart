@@ -1,5 +1,5 @@
+import 'package:cropmate/models/crop_watering_plan.dart';
 import 'package:flutter/material.dart';
-import 'package:plantricz/models/crop_watering_plan.dart';
 
 class GrowthStageWidget extends StatelessWidget {
   final String cropType;

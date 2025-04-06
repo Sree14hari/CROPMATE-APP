@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:plantricz/screens/plant_identification_page.dart';
+import 'package:cropmate/screens/plant_identification_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PlantsPage extends StatefulWidget {

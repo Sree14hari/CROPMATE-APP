@@ -658,7 +658,7 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
           // Display each suggestion
           ...suggestions
               .map((suggestion) => _buildSuggestionItem(suggestion))
-              .toList(),
+              ,
 
           const SizedBox(height: 16),
           Center(

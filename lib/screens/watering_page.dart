@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:plantricz/models/crop_watering_plan.dart';
-import 'package:plantricz/models/watering_schedule.dart';
-import 'package:plantricz/widgets/growth_stage_widget.dart';
+import 'package:cropmate/models/crop_watering_plan.dart';
+import 'package:cropmate/models/watering_schedule.dart';
+import 'package:cropmate/widgets/growth_stage_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -12,8 +12,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_init;
 import 'package:path_provider/path_provider.dart';
 // import 'package:app_settings/app_settings.dart';
-// import 'package:plantriczz/models/crop_watering_plan.dart';
-// import 'package:plantriczz/widgets/growth_stage_widget.dart';
+// import 'package:cropmatez/models/crop_watering_plan.dart';
+// import 'package:cropmatez/widgets/growth_stage_widget.dart';
 
 class WateringPage extends StatefulWidget {
   const WateringPage({Key? key}) : super(key: key);
@@ -616,36 +616,6 @@ class _WateringPageState extends State<WateringPage> {
                     //   },
                     // ),
                     const SizedBox(height: 16),
-                    if (selectedCropType != null)
-                      InkWell(
-                        onTap: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: plantingDate ?? DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime.now(),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              plantingDate = picked;
-                            });
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            labelText: 'Planting Date',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            prefixIcon: const Icon(Icons.calendar_today),
-                          ),
-                          child: Text(
-                            plantingDate != null
-                                ? '${plantingDate!.day}/${plantingDate!.month}/${plantingDate!.year}'
-                                : 'Select planting date',
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 16),
                     if (isCustomFrequency)
                       Column(

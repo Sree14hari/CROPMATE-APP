@@ -647,10 +647,10 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
 
 extension on File {
   get width =>
-      MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width;
+      MediaQueryData.fromView(WidgetsBinding.instance.window).size.width;
 
   get height =>
-      MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.height;
+      MediaQueryData.fromView(WidgetsBinding.instance.window).size.height;
 }
 
 // Custom painter to draw bounding boxes

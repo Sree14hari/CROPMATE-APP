@@ -3,12 +3,13 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:plantricz/screens/disease_detection_page.dart';
-import 'package:plantricz/screens/plant_identification_page.dart';
-import 'package:plantricz/screens/plants_page.dart';
-import 'package:plantricz/screens/seasonal_care_page.dart'; // Add this import
-import 'package:plantricz/screens/watering_page.dart';
-import 'package:plantricz/services/weather_service.dart';
+import 'package:cropmate/screens/disease_detection_page.dart';
+import 'package:cropmate/screens/plant_identification_page.dart';
+import 'package:cropmate/screens/plants_page.dart';
+// Add this import
+import 'package:cropmate/screens/watering_page.dart';
+import 'package:cropmate/screens/seasonal_care_page.dart'; // Ensure SeasonalCarePage is imported
+import 'package:cropmate/services/weather_service.dart';
 import 'package:flutter/services.dart';
 
 class HomePage extends StatefulWidget {
@@ -101,6 +102,54 @@ class _HomePageState extends State<HomePage> {
               icon,
               color: color,
               size: 32,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSquareButton({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withOpacity(0.3), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                icon,
+                color: color,
+                size: 32,
+              ),
             ),
           ),
         ),
@@ -410,6 +459,14 @@ class _HomePageState extends State<HomePage> {
           });
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showChatbotDialog(context);
+        },
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.chat, color: Colors.white),
+        tooltip: 'Chatbot',
+      ),
     );
   }
 
@@ -608,12 +665,11 @@ class _HomePageState extends State<HomePage> {
                   runSpacing: 20,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildCircularButton(
+                    _buildSquareButton(
                       title: 'Disease Detection',
                       icon: Icons.local_hospital_rounded,
                       color: Colors.redAccent,
                       onTap: () {
-                        // Add custom page transition animation
                         HapticFeedback.mediumImpact();
                         Navigator.of(context).push(
                           PageRouteBuilder(
@@ -649,21 +705,12 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                     ),
-                    // _buildCircularButton(
-                    //   title: 'Plant Care',
-                    //   icon: Icons.lightbulb_outline,
-                    //   color: Colors.amber,
-                    //   onTap: () {
-                    //     // Navigate to plant care tips
-                    //   },
-                    // ),
-                    _buildCircularButton(
+                    _buildSquareButton(
                       title: 'Identify',
                       icon: Icons.eco,
                       color: Colors.green,
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        // Add custom page transition animation
                         Navigator.of(context).push(
                           PageRouteBuilder(
                             pageBuilder:
@@ -698,7 +745,7 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                     ),
-                    _buildCircularButton(
+                    _buildSquareButton(
                       title: 'Watering',
                       icon: Icons.water_drop,
                       color: Colors.blueAccent,
@@ -809,6 +856,59 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showChatbotDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController _messageController = TextEditingController();
+        List<Map<String, String>> _messages = [];
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Chatbot'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final message = _messages[index];
+                          return Align(
+                            alignment: message['sender'] == 'user'
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: message['sender'] == 'user'
+                                    ? Colors.green[100]
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(message['text'] ?? ''),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

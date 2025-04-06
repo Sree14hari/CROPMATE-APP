@@ -1,4 +1,4 @@
-name: plantricz
+name: cropmate
 description: "A plant companion."
 publish_to: 'none' 
 version: 1.0.2
@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  google_generative_ai: ^0.1.0
   # Add this line
   # app_settings: ^4.2.0
   http: ^1.1.0
@@ -46,7 +47,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.13.1
-
+  
 flutter_launcher_icons:
   android: true
   ios: true
@@ -58,4 +59,4 @@ flutter:
   assets:
     - assets/
     - assets/models/
- 
+
