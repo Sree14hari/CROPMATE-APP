@@ -1,16 +1,9 @@
-# plantriczz
+CROPMATE
+CropMate | Smart Farming with AI & IoT
+CropMate is an AI-powered smart agriculture assistant designed to revolutionize farming. From real-time crop disease detection and pest identification to weather forecasting, soil analysis, and intelligent irrigation—CropMate combines AI, Machine Learning, and IoT to empower farmers with data-driven insights and recommendations.
 
-A new Flutter project.
+Whether you're monitoring soil conditions, getting market price updates, or chatting with our multilingual AI assistant, CropMate helps you make smarter, faster, and more sustainable farming decisions.
 
-## Getting Started
+Empowering the future of agriculture—one smart farm at a time.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+#SmartFarming #AIinAgriculture #IoTFarming #CropMate
